@@ -39,3 +39,12 @@ $ docker run \
     ]
 }
 ```
+
+
+### How to runnin in local (use docker-compose)
+
+```
+$ AWS_DEFAULT_REGION= AWS_PROFILE= \
+  AWS_S3_BUCKET=<s3 bucket> S3_PREFIX=<s3 bucket prefix> \
+  LB_DNS_NAME=<dns name of alb> make (up-local|up|down)
+```

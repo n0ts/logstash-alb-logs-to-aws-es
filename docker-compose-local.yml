@@ -1,0 +1,70 @@
+version: '3.7'
+services:
+  client:
+    container_name: client
+    image: centos
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "-w", "http code = %{http_code}", "https://${LB_DNS_NAME}"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 1m
+  logstash:
+    container_name: logstash
+    build:
+      context: ./logstash
+      args:
+        - TAG=${TAG}
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - S3_BUCKET
+      - S3_PREFIX
+      - ES_HOST
+      # https://www.elastic.co/guide/en/logstash/current/docker-config.html
+      - PIPELINE_WORKERS=1
+      - LOG_LEVEL=info
+      - XPACK_MONITORING_ENABLED=false
+    links:
+      - elasticsearch
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/config/jvm.options:/usr/share/logstash/config/jvm.options
+      - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash/patterns/alb:/usr/share/logstash/patterns/alb
+      - ./logstash/template/template_alb.json:/usr/share/logstash/template/template_alb.json
+      - ./logstash/data:/usr/share/logstash/data
+      - ./logstash/logs:/usr/share/logstash/logs
+  elasticsearch:
+    container_name: elasticsearch
+    image: "docker.elastic.co/elasticsearch/elasticsearch:${TAG}"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - cluster.name=es-data-sync-sample
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
+      - ./elasticsearch/logs:/usr/share/elasticsearch/logs
+  kibana:
+    container_name: kibana
+    image: "docker.elastic.co/kibana/kibana:${TAG}"
+    environment:
+      - SERVER_NAME=api-logs-to-es-kibana
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - XPACK_MONITORING_ENABLED=false
+    ports:
+      - "5601:5601"
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./kibana/logs:/usr/share/kibana/logs
+      - ./kibana/data:/usr/share/kibana/data

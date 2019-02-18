@@ -1,0 +1,39 @@
+version: '3.7'
+services:
+  client:
+    container_name: client
+    image: centos
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "-w", "http code = %{http_code}", "https://${LB_DNS_NAME}"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 1m
+  logstash:
+    container_name: logstash
+    build:
+      context: ./logstash
+      args:
+        - TAG=${TAG}
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - S3_BUCKET
+      - S3_PREFIX
+      - ES_HOST
+      # https://www.elastic.co/guide/en/logstash/current/docker-config.html
+      - PIPELINE_WORKERS=1
+      - LOG_LEVEL=info
+      - XPACK_MONITORING_ENABLED=false
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/config/jvm.options:/usr/share/logstash/config/jvm.options
+      - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash/patterns/alb:/usr/share/logstash/patterns/alb
+      - ./logstash/template/template_alb.json:/usr/share/logstash/template/template_alb.json
+      - ./logstash/data:/usr/share/logstash/data
+      - ./logstash/logs:/usr/share/logstash/logs
