@@ -16,7 +16,7 @@ ifndef ($(ES_HOST,)
 	ES_HOST ?= http://elasticsearch:9200
 endif
 
-LB_DNS_MNAME ?= aaaa
+LB_DNS_MNAME ?= localhost
 
 .PHONY: up
 up: # Up container
