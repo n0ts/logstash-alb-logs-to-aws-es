@@ -41,7 +41,7 @@ $ docker run \
 ```
 
 
-### How to runnin in local (use docker-compose)
+### How to running in local (use docker-compose)
 
 ```
 $ AWS_DEFAULT_REGION= AWS_PROFILE= \
